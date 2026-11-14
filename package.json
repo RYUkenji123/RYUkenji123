@@ -3,7 +3,7 @@
   "private": true,
   "description": "DrawLab: an AI-powered drawing learning studio",
   "scripts": {
-    "setup": "npm install --prefix server && npm install --prefix web",
+    "setup": "npm install --include=dev --prefix server && npm install --include=dev --prefix web",
     "dev": "concurrently -n api,web -c yellow,cyan \"npm --prefix server run dev\" \"npm --prefix web run dev\"",
     "build": "npm --prefix web run build",
     "start": "npm --prefix server start",

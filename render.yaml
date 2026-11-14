@@ -1,0 +1,22 @@
+# One-click deploy on Render: New > Blueprint, then pick this repository.
+services:
+  - type: web
+    name: drawlab
+    runtime: node
+    plan: starter            # a persistent disk needs a paid instance
+    buildCommand: npm run setup && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DRAWLAB_DATA_DIR
+        value: /var/data
+      - key: ANTHROPIC_API_KEY
+        sync: false          # Render asks you for this value during setup
+    disk:
+      name: drawlab-data
+      mountPath: /var/data
+      sizeGB: 1

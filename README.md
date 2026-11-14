@@ -53,7 +53,7 @@ DrawLab is an installable web app (PWA), with a manifest, app icons and an offli
 
 1. Make the server reachable from the phone:
    - **Same Wi-Fi:** run `npm run build && npm start` on your computer, then open `http://<your-computer-ip>:8787` on the phone. On plain `http://` the home-screen icon works, but there's no offline support or full install prompt (browsers only allow those on HTTPS).
-   - **Anywhere:** deploy to an HTTPS host (Render, Railway, Fly.io…) with `NODE_ENV=production`, `ANTHROPIC_API_KEY`, and `DRAWLAB_DATA_DIR` pointing at a persistent disk.
+   - **Anywhere:** on [Render](https://render.com), choose **New → Blueprint**, pick this repository and enter your `ANTHROPIC_API_KEY`. `render.yaml` sets up everything else. Or deploy to another HTTPS host (Render, Railway, Fly.io…) with `NODE_ENV=production`, `ANTHROPIC_API_KEY`, and `DRAWLAB_DATA_DIR` pointing at a persistent disk.
 2. Install the app:
    - **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
    - **Android (Chrome):** tap **Install** on the dashboard banner, or ⋮ → **Install app**.
