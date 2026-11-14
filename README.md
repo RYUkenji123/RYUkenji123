@@ -46,3 +46,16 @@ npm run dev          # API on :8787, web on :5173 (proxied)
 ```
 
 Production: `npm run build && npm start` serves the built SPA and the API from port 8787. Data (SQLite + uploads) is stored in `server/data/` unless you set `DRAWLAB_DATA_DIR`.
+
+## Installing on a phone
+
+DrawLab is an installable web app (PWA), with a manifest, app icons and an offline app shell.
+
+1. Make the server reachable from the phone:
+   - **Same Wi-Fi:** run `npm run build && npm start` on your computer, then open `http://<your-computer-ip>:8787` on the phone. On plain `http://` the home-screen icon works, but there's no offline support or full install prompt (browsers only allow those on HTTPS).
+   - **Anywhere:** deploy to an HTTPS host (Render, Railway, Fly.io…) with `NODE_ENV=production`, `ANTHROPIC_API_KEY`, and `DRAWLAB_DATA_DIR` pointing at a persistent disk.
+2. Install the app:
+   - **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
+   - **Android (Chrome):** tap **Install** on the dashboard banner, or ⋮ → **Install app**.
+
+On phones you get a bottom tab bar, pinch-to-zoom and drag-to-pan in the studio, and bigger touch targets in the academies. The Perspective and Light academies keep working offline once loaded. Anything that needs your account or the AI needs a connection.

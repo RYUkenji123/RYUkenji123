@@ -224,6 +224,8 @@ export default function Workspace() {
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<{ x: number; y: number; vb: typeof vb; moved: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; mid: { x: number; y: number }; vb: typeof vb } | null>(null);
   const toSvg = (clientX: number, clientY: number) => {
     const svg = svgRef.current!;
     const pt = svg.createSVGPoint();
@@ -302,10 +304,42 @@ export default function Workspace() {
         <div
           className={`stage${dragging ? " dragging" : ""}`}
           onPointerDown={(e) => {
-            if (e.button !== 0) return;
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.current.size === 2) {
+              // start a pinch: remember the finger spread and the view it applies to
+              const [a, b] = [...pointers.current.values()];
+              pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, vb };
+              drag.current = null;
+              try {
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              } catch { /* pointer already released */ }
+              return;
+            }
             drag.current = { x: e.clientX, y: e.clientY, vb, moved: false };
           }}
           onPointerMove={(e) => {
+            if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            const pz = pinch.current;
+            if (pz && pointers.current.size >= 2 && svgRef.current) {
+              const [a, b] = [...pointers.current.values()];
+              const factor = Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, pz.dist);
+              const rect = svgRef.current.getBoundingClientRect();
+              // viewBox is letterboxed ("meet"): s = svg units per screen px, off = empty margin in px
+              const map = (v: typeof vb) => {
+                const s = Math.max(v.w / rect.width, v.h / rect.height);
+                return { s, offX: (rect.width - v.w / s) / 2, offY: (rect.height - v.h / s) / 2 };
+              };
+              const m0 = map(pz.vb);
+              const px = pz.vb.x + (pz.mid.x - rect.left - m0.offX) * m0.s; // image point under the fingers at pinch start
+              const py = pz.vb.y + (pz.mid.y - rect.top - m0.offY) * m0.s;
+              const w = Math.min(W * 12, Math.max(W * 0.08, pz.vb.w / factor));
+              const h = (pz.vb.h / pz.vb.w) * w;
+              const m1 = map({ ...pz.vb, w, h });
+              const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+              setView({ x: px - (mid.x - rect.left - m1.offX) * m1.s, y: py - (mid.y - rect.top - m1.offY) * m1.s, w, h });
+              return;
+            }
             const d = drag.current;
             if (!d || !svgRef.current) return;
             const dx = e.clientX - d.x, dy = e.clientY - d.y;
@@ -313,13 +347,23 @@ export default function Workspace() {
             if (!d.moved) {
               d.moved = true;
               setDragging(true);
-              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              try {
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              } catch { /* pointer already released */ }
             }
             const rect = svgRef.current.getBoundingClientRect();
             const scale = Math.max(d.vb.w / rect.width, d.vb.h / rect.height);
             setView({ ...d.vb, x: d.vb.x - dx * scale, y: d.vb.y - dy * scale });
           }}
-          onPointerUp={() => {
+          onPointerUp={(e) => {
+            pointers.current.delete(e.pointerId);
+            if (pointers.current.size < 2) pinch.current = null;
+            drag.current = null;
+            setDragging(false);
+          }}
+          onPointerCancel={(e) => {
+            pointers.current.delete(e.pointerId);
+            pinch.current = null;
             drag.current = null;
             setDragging(false);
           }}

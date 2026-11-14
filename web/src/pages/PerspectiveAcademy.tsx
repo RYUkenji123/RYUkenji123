@@ -3,6 +3,7 @@ import { api } from "../api";
 import { Scene3D, perspectiveKind, type Cam, type Obj } from "../components/Scene3D";
 import { VPConstructor } from "../components/VPConstructor";
 import { Icon } from "../components/Icons";
+import { useIsPhone } from "../lib/install";
 
 interface Lesson {
   id: string;
@@ -36,6 +37,7 @@ function BoxLab({ preset }: { preset: "space" | "box" | "one" | "two" | "three" 
   }[preset];
   const [s, set] = useState(init);
   const upd = (k: keyof typeof s) => (v: number) => set({ ...s, [k]: v });
+  const phone = useIsPhone();
   const [hidden, setHidden] = useState(true);
   const [ext, setExt] = useState(true);
   const cam: Cam = { height: s.height, distance: s.distance, pitch: s.pitch, focal: s.focal };
@@ -54,7 +56,7 @@ function BoxLab({ preset }: { preset: "space" | "box" | "one" | "two" | "three" 
 
   return (
     <div className="interactive">
-      <Scene3D objects={objects} cam={cam} showHidden={hidden} showExtensions={ext} showGround={preset === "space" || preset === "city"} scale={preset === "three" ? 0.8 : 1} />
+      <Scene3D objects={objects} cam={cam} width={phone ? 440 : 820} height={phone ? 460 : 480} showHidden={hidden} showExtensions={ext} showGround={preset === "space" || preset === "city"} scale={preset === "three" ? 0.8 : 1} />
       <div className="controls">
         <Slider label="Rotate object (yaw)" value={s.yaw} min={-90} max={90} onChange={upd("yaw")} unit="°" />
         {preset === "rotate" && <Slider label="Tip object forward" value={s.tilt} min={-60} max={60} onChange={upd("tilt")} unit="°" />}
@@ -73,6 +75,7 @@ function BoxLab({ preset }: { preset: "space" | "box" | "one" | "two" | "three" 
 function CylinderLab({ preset }: { preset: "ellipses" | "cylinders" }) {
   const [s, set] = useState({ height: preset === "ellipses" ? 2.2 : 2.6, tilt: preset === "ellipses" ? 0 : 0, yaw: 0, focal: 520, distance: 7 });
   const upd = (k: keyof typeof s) => (v: number) => set({ ...s, [k]: v });
+  const phone = useIsPhone();
   const cam: Cam = { height: s.height, distance: s.distance, pitch: 0, focal: s.focal };
   const objects: Obj[] =
     preset === "ellipses"
@@ -83,7 +86,7 @@ function CylinderLab({ preset }: { preset: "ellipses" | "cylinders" }) {
         ];
   return (
     <div className="interactive">
-      <Scene3D objects={objects} cam={cam} ellipseAxes showVPs={false} />
+      <Scene3D objects={objects} cam={cam} width={phone ? 440 : 820} height={phone ? 460 : 480} scale={phone ? 0.75 : 1} ellipseAxes showVPs={false} />
       <div className="controls">
         <Slider label="Eye level" value={s.height} min={-1.5} max={6} step={0.1} onChange={upd("height")} />
         <Slider label="Tilt cylinder" value={s.tilt} min={-90} max={90} onChange={upd("tilt")} unit="°" />

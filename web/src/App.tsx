@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { api, type User } from "./api";
+import { api, ApiError, type User } from "./api";
 import { Icon } from "./components/Icons";
 import AuthPage from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -23,10 +23,11 @@ export const useSession = () => useContext(SessionCtx)!;
 
 function Shell({ children }: { children: ReactNode }) {
   const { user, logout } = useSession();
-  const link = (to: string, label: string, icon: ReactNode) => (
-    <NavLink to={to} end={to === "/"} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
+  const link = (to: string, label: string, icon: ReactNode, short = label) => (
+    <NavLink to={to} end={to === "/"} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`} aria-label={label}>
       {icon}
-      <span>{label}</span>
+      <span className="nav-full">{label}</span>
+      <span className="nav-short">{short}</span>
     </NavLink>
   );
   return (
@@ -35,15 +36,15 @@ function Shell({ children }: { children: ReactNode }) {
         <div className="brand">
           <img src="/favicon.svg" alt="" /> DrawLab
         </div>
-        {link("/", "Dashboard", <Icon.home />)}
-        {link("/studio", "Breakdown Studio", <Icon.studio />)}
+        {link("/", "Dashboard", <Icon.home />, "Home")}
+        {link("/studio", "Breakdown Studio", <Icon.studio />, "Studio")}
         <div className="nav-section">Learn</div>
-        {link("/perspective", "Perspective Academy", <Icon.cube />)}
-        {link("/light", "Light & Shadow", <Icon.sun />)}
-        {link("/exercises", "Daily Exercises", <Icon.timer />)}
+        {link("/perspective", "Perspective Academy", <Icon.cube />, "Persp.")}
+        {link("/light", "Light & Shadow", <Icon.sun />, "Light")}
+        {link("/exercises", "Daily Exercises", <Icon.timer />, "Practice")}
         <div className="nav-section">You</div>
-        {link("/progress", "Progress", <Icon.chart />)}
-        {link("/tutor", "AI Tutor", <Icon.chat />)}
+        {link("/progress", "Progress", <Icon.chart />, "Progress")}
+        {link("/tutor", "AI Tutor", <Icon.chat />, "Tutor")}
         <div className="sidebar-foot">
           <div className="small">{user.name}</div>
           <div className="faint small" style={{ textTransform: "capitalize", marginBottom: 8 }}>{user.skill_level}</div>
@@ -56,13 +57,14 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const [state, setState] = useState<{ user: User | null; ai: boolean; loading: boolean }>({ user: null, ai: false, loading: true });
+  const [state, setState] = useState<{ user: User | null; ai: boolean; loading: boolean; offline?: boolean }>({ user: null, ai: false, loading: true });
   const refresh = useCallback(async () => {
     try {
       const r = await api<{ user: User; ai: boolean }>("/me");
       setState({ user: r.user, ai: r.ai, loading: false });
-    } catch {
-      setState({ user: null, ai: false, loading: false });
+    } catch (e) {
+      // a network failure (no ApiError status) means we can't reach the server, not that you're signed out
+      setState({ user: null, ai: false, loading: false, offline: !(e instanceof ApiError) });
     }
   }, []);
   useEffect(() => {
@@ -74,6 +76,15 @@ export default function App() {
   }, []);
 
   if (state.loading) return <div className="empty"><span className="spinner" /></div>;
+  if (state.offline)
+    return (
+      <div className="empty stack" style={{ alignItems: "center", paddingTop: "30vh" }}>
+        <img src="/icon-192.png" alt="" width={64} height={64} style={{ borderRadius: 14 }} />
+        <h2 style={{ color: "var(--text)" }}>Can't reach DrawLab</h2>
+        <p style={{ maxWidth: 320 }}>You're offline, or the DrawLab server isn't running. Your work is saved on the server and will be here when you reconnect.</p>
+        <button className="primary" onClick={() => { setState((s) => ({ ...s, loading: true })); refresh(); }}>Try again</button>
+      </div>
+    );
   if (!state.user) return <AuthPage onDone={refresh} />;
 
   return (

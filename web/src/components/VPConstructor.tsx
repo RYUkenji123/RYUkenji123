@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useIsPhone } from "../lib/install";
 
 /**
  * Hand-construction of a box from vanishing points, the way you'd do it on paper.
@@ -25,6 +26,8 @@ export function VPConstructor({ mode, showGrid = false }: { mode: "one" | "two";
   const [frontW, setFrontW] = useState(180);
   const [drag, setDrag] = useState<string | null>(null);
   const svg = useRef<SVGSVGElement>(null);
+  // On a phone the 820px-wide drawing is shown at about half size, so scale up marks and hit areas.
+  const k = useIsPhone() ? 2 : 1;
 
   const pos = (e: React.PointerEvent): P => {
     const r = svg.current!.getBoundingClientRect();
@@ -45,16 +48,16 @@ export function VPConstructor({ mode, showGrid = false }: { mode: "one" | "two";
   };
   const handle = (id: string, x: number, y: number, color: string, label?: string) => (
     <g key={id} style={{ cursor: "grab" }} onPointerDown={(e) => { e.preventDefault(); (e.target as Element).setPointerCapture?.(e.pointerId); setDrag(id); }}>
-      <circle cx={x} cy={y} r={14} fill="transparent" />
-      <circle cx={x} cy={y} r={7} fill={color} stroke="#121210" strokeWidth={2} />
-      {label && <text x={x + 11} y={y - 10} fill={color} fontSize={12} fontWeight={600} fontFamily="Inter">{label}</text>}
+      <circle cx={x} cy={y} r={16 * k} fill="transparent" />
+      <circle cx={x} cy={y} r={7 * k} fill={color} stroke="#121210" strokeWidth={2 * k} />
+      {label && <text x={x + 11 * k} y={y - 10 * k} fill={color} fontSize={12 * k} fontWeight={600} fontFamily="Inter">{label}</text>}
     </g>
   );
 
   const VP1: P = [vp1x, horizon], VP2: P = [vp2x, horizon];
   const T: P = [front.x, front.top], B: P = [front.x, front.bottom];
   const els: React.ReactNode[] = [];
-  const ln = (k: string, a: P, b: P, color: string, o: Partial<React.SVGProps<SVGLineElement>> = {}) => els.push(<line key={k} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={color} strokeWidth={2.2} strokeLinecap="round" {...o} />);
+  const ln = (k: string, a: P, b: P, color: string, o: Partial<React.SVGProps<SVGLineElement>> = {}) => els.push(<line key={k} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={color} strokeWidth={2.2} strokeLinecap="round" {...o} vectorEffect="non-scaling-stroke" />);
   const guide = (k: string, a: P, b: P, color: string) => ln(k, a, b, color, { strokeOpacity: 0.3, strokeWidth: 1 });
 
   if (showGrid) {
@@ -112,15 +115,15 @@ export function VPConstructor({ mode, showGrid = false }: { mode: "one" | "two";
         style={{ touchAction: "none", cursor: drag ? "grabbing" : "default" }}
       >
         <line x1={0} y1={horizon} x2={W} y2={horizon} stroke="#d98b4a" strokeWidth={1.5} strokeDasharray="10 6" />
-        <line x1={0} y1={horizon} x2={W} y2={horizon} stroke="transparent" strokeWidth={16} style={{ cursor: "ns-resize" }} onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); setDrag("horizon"); }} />
-        <text x={10} y={horizon - 8} fill="#d98b4a" fontSize={12} fontFamily="Inter">Horizon (drag)</text>
+        <line x1={0} y1={horizon} x2={W} y2={horizon} stroke="transparent" strokeWidth={16 * k} style={{ cursor: "ns-resize" }} onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); setDrag("horizon"); }} />
+        <text x={10} y={horizon - 8} fill="#d98b4a" fontSize={12 * k} fontFamily="Inter">Horizon (drag)</text>
         {els}
         {handle("vp1", vp1x, horizon, "#f0a868", mode === "one" ? "VP" : "VP1")}
         {mode === "two" && handle("vp2", vp2x, horizon, "#8fc1d4", "VP2")}
         {handle("front", front.x, (front.top + front.bottom) / 2, "#ece6da")}
         {handle("top", front.x, front.top, "#ece6da")}
         {handle("bottom", front.x, front.bottom, "#ece6da")}
-        <text x={W - 10} y={H - 12} textAnchor="end" fill="#b3ab9e" fontSize={12} fontFamily="Inter">{eyeNote}</text>
+        <text x={W - 10} y={H - 12} textAnchor="end" fill="#b3ab9e" fontSize={12 * k} fontFamily="Inter">{k > 1 ? eyeNote.split(":")[0] : eyeNote}</text>
       </svg>
       <div className="controls">
         {mode === "one" && <label className="field">Front width <input type="range" min={40} max={400} value={frontW} onChange={(e) => setFrontW(+e.target.value)} /></label>}

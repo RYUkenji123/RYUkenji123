@@ -4,6 +4,7 @@ import { api, type Exercise, type User } from "../api";
 import { Icon } from "../components/Icons";
 import { useSession } from "../App";
 import { StatusChip } from "./StudioList";
+import { useInstall } from "../lib/install";
 
 interface Dash {
   user: User;
@@ -21,7 +22,15 @@ interface Dash {
 const CAT_LINKS: Record<string, string> = { perspective: "/perspective", light: "/light", values: "/studio", shape: "/studio", proportion: "/studio" };
 
 export default function Dashboard() {
-  const { refresh } = useSession();
+  const { refresh, logout } = useSession();
+  const inst = useInstall();
+  const [hideInstall, setHideInstall] = useState(() => {
+    try {
+      return localStorage.getItem("dl-hide-install") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [d, setD] = useState<Dash | null>(null);
   const [error, setError] = useState("");
   const load = () => api<Dash>("/dashboard").then(setD).catch((e) => setError(e.message));
@@ -70,8 +79,23 @@ export default function Dashboard() {
             </select>
           </label>
           <Link to="/studio" className="btn primary"><Icon.upload /> New breakdown</Link>
+          <button className="ghost sm phone-only" onClick={logout} aria-label="Sign out"><Icon.logout /></button>
         </div>
       </div>
+
+      {inst.kind && !hideInstall && (
+        <div className="notice ai row wrap" style={{ marginBottom: 18 }}>
+          <img src="/icon-192.png" alt="" width={36} height={36} style={{ borderRadius: 8 }} />
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <b style={{ color: "var(--text)" }}>Install DrawLab on this device</b>
+            <div className="small">
+              {inst.kind === "prompt" ? "Open it from your home screen, full screen, like a normal app." : <>Tap the <b>Share</b> button in Safari, then <b>Add to Home Screen</b>.</>}
+            </div>
+          </div>
+          {inst.kind === "prompt" && <button className="primary sm" onClick={inst.install}>Install</button>}
+          <button className="ghost sm" onClick={() => { setHideInstall(true); try { localStorage.setItem("dl-hide-install", "1"); } catch { /* storage blocked */ } }}>Not now</button>
+        </div>
+      )}
 
       {!d.ai && <div className="notice warn" style={{ marginBottom: 18 }}>AI features (reference analysis, feedback and the tutor) are offline because the server has no Anthropic API key. Everything else works.</div>}
 

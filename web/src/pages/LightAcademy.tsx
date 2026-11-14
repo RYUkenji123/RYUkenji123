@@ -96,12 +96,13 @@ function LightLab({ preset, highlight }: { preset: Partial<LightParams>; highlig
 
   return (
     <div className="interactive">
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 190px", gap: 0 }}>
+      <div className="light-lab" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 190px", gap: 0 }}>
         <canvas ref={canvas} width={RW} height={RH} style={{ width: "100%", imageRendering: "auto" }} aria-label={`${kind} lit from ${Math.round(p.azimuth)} degrees`} />
         <div style={{ padding: 14, borderLeft: "1px solid var(--line)", background: "var(--bg-2)", display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="small faint">Light position (top view). Drag the sun.</div>
           <div
             ref={pad}
+            className="pad"
             onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); setFromPad(e); }}
             onPointerMove={(e) => e.buttons && setFromPad(e)}
             style={{ position: "relative", width: "100%", aspectRatio: "1", borderRadius: "50%", border: "1px solid var(--line-2)", background: "radial-gradient(circle, #2e2c28, #1a1917)", cursor: "crosshair", touchAction: "none" }}

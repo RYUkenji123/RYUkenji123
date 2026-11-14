@@ -515,7 +515,16 @@ app.post(
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webDist = path.resolve(here, "../../web/dist");
 if (fs.existsSync(webDist)) {
-  app.use(express.static(webDist));
+  app.use(
+    express.static(webDist, {
+      setHeaders(res, file) {
+        // Hashed bundles can be cached forever; the service worker, manifest and HTML must update promptly.
+        if (file.includes(`${path.sep}assets${path.sep}`)) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        else res.setHeader("Cache-Control", "no-cache");
+        if (file.endsWith(".webmanifest")) res.setHeader("Content-Type", "application/manifest+json");
+      },
+    }),
+  );
   app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")));
 }
 
